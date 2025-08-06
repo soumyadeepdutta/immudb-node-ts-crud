@@ -158,7 +158,7 @@ class ImmudbCrudService {
     this.client = new ImmudbClient({
       host,
       port,
-      database: "mydb", // process.env.DB_NAME ||
+      database: process.env.DB_NAME || "mydb",
     });
   }
 
