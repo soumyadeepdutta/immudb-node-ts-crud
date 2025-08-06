@@ -344,7 +344,9 @@ class ImmudbCrudService {
         sql: `
 					DELETE FROM "users"
 					WHERE id = @id
-				`,
+          DELETE FROM "users"
+          WHERE id = @id
+        `,
         params: { id },
       });
 
