@@ -293,7 +293,6 @@ class ImmudbCrudService {
 					email: updates.email || '',
 				},
 			});
-			console.log('result', result);
 
 			// Get updated user data
 			const updatedUser = await this.getUser(id);
@@ -310,14 +309,15 @@ class ImmudbCrudService {
 	}
 
 	// Time Travel Query - Verify data at specific transaction
-	async getUserAtTransaction(id: string, txId: string): Promise<VerifiedResponse> {
+	async getUserAtTransaction(id: string, txId?: string): Promise<VerifiedResponse> {
 		try {
-			// For now, just return current user data as historical queries
-			// require specific immudb methods that may not be available in this client version
-			const currentUser = await this.getUser(id);
+			const result = await this.client.SQLQuery({
+				sql: `SELECT * FROM (HISTORY OF "users") WHERE id = @id`,
+				params: { id },
+			});
 
 			return {
-				data: currentUser.data,
+				data: result,
 				verified: true,
 				proof: { note: `Historical data before transaction ${txId}` },
 			};
@@ -646,7 +646,7 @@ app.put('/users/:id', async (req, res) => {
 
 /**
  * @swagger
- * /users/{id}/history/{txId}:
+ * /users/{id}/history:
  *   get:
  *     summary: Get user data at specific transaction
  *     description: Retrieve historical user data at a specific transaction ID (time travel feature)
@@ -659,13 +659,6 @@ app.put('/users/:id', async (req, res) => {
  *           type: string
  *         description: User ID
  *         example: "user123"
- *       - in: path
- *         name: txId
- *         required: true
- *         schema:
- *           type: string
- *         description: Transaction ID to get historical data from
- *         example: "12345"
  *     responses:
  *       200:
  *         description: Historical user data retrieved successfully
@@ -698,9 +691,9 @@ app.put('/users/:id', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-app.get('/users/:id/history/:txId', async (req, res) => {
+app.get('/users/:id/history', async (req, res) => {
 	try {
-		const result = await crudService.getUserAtTransaction(req.params.id, req.params.txId);
+		const result = await crudService.getUserAtTransaction(req.params.id);
 
 		res.json({
 			success: true,
