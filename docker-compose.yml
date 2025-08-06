@@ -5,17 +5,22 @@ services:
     container_name: immudb
     ports:
       - "3322:3322"
+      - "8080:8080"
+      - "5032:5032"
       - "9497:9497"
-    command: ["--devmode"]
+    command: ["--devmode", "--auth=true", "--logfile=", "--pgsql-server=true"]
     volumes:
-      - immudb_data:/root/.immudb
+      - immudb_data:/var/lib/immudb
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pgrep immudb || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      test: ["CMD-SHELL", "netstat -an | grep :3322 | grep LISTEN || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    environment:
+      - IMMUDB_DEVMODE=true
+      - IMMUDB_PGSQL_SERVER=true
 
   app:
     build:
@@ -33,11 +38,6 @@ services:
       - IMMUDB_PASSWORD=immudb
       - DB_NAME=mydb
       - PORT=3000
-      - ROOT_PATH=./.immudb_root
-    command: ["npm", "run", "start:prod"]
-    working_dir: /usr/src/app
-    volumes:
-      - ./:/usr/src/app
     restart: unless-stopped
 
 volumes:

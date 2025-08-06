@@ -1,340 +1,373 @@
 // src/app.ts
-import express from 'express';
-import ImmudbClient from 'immudb-node';
-import dotenv from 'dotenv';
-import swaggerUi from 'swagger-ui-express';
-import swaggerJsdoc from 'swagger-jsdoc';
+import express from "express";
+import ImmudbClient from "immudb-node";
+import dotenv from "dotenv";
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
 
 // Load environment variables
 dotenv.config();
 
 // Swagger configuration
 const swaggerOptions = {
-	definition: {
-		openapi: '3.0.0',
-		info: {
-			title: 'ImmuDB CRUD API',
-			version: '1.0.0',
-			description: 'A tamper-proof CRUD API using ImmuDB for immutable database operations',
-			contact: {
-				name: 'API Support',
-				email: 'support@example.com',
-			},
-		},
-		servers: [
-			{
-				url: `http://localhost:${process.env.PORT || 3000}`,
-				description: 'Development server',
-			},
-		],
-		components: {
-			schemas: {
-				User: {
-					type: 'object',
-					properties: {
-						id: {
-							type: 'string',
-							description: 'Unique identifier for the user',
-						},
-						name: {
-							type: 'string',
-							description: "User's full name",
-						},
-						email: {
-							type: 'string',
-							format: 'email',
-							description: "User's email address",
-						},
-						createdAt: {
-							type: 'string',
-							format: 'date-time',
-							description: 'Timestamp when the user was created',
-						},
-					},
-					required: ['id', 'name', 'email'],
-				},
-				VerifiedResponse: {
-					type: 'object',
-					properties: {
-						success: {
-							type: 'boolean',
-							description: 'Whether the operation was successful',
-						},
-						user: {
-							$ref: '#/components/schemas/User',
-						},
-						users: {
-							type: 'array',
-							items: {
-								$ref: '#/components/schemas/User',
-							},
-						},
-						count: {
-							type: 'integer',
-							description: 'Number of users returned',
-						},
-						tamperProof: {
-							type: 'object',
-							properties: {
-								verified: {
-									type: 'boolean',
-									description: 'Whether the data has been cryptographically verified',
-								},
-								transactionId: {
-									type: 'string',
-									description: 'ImmuDB transaction ID',
-								},
-								cryptographicProof: {
-									type: 'boolean',
-									description: 'Whether cryptographic proof is available',
-								},
-							},
-						},
-					},
-				},
-				Error: {
-					type: 'object',
-					properties: {
-						success: {
-							type: 'boolean',
-							example: false,
-						},
-						error: {
-							type: 'string',
-							description: 'Error message',
-						},
-					},
-				},
-				HealthCheck: {
-					type: 'object',
-					properties: {
-						success: {
-							type: 'boolean',
-							description: 'Whether the service is healthy',
-						},
-						database: {
-							type: 'string',
-							enum: ['connected', 'disconnected'],
-							description: 'Database connection status',
-						},
-						timestamp: {
-							type: 'string',
-							format: 'date-time',
-							description: 'Current timestamp',
-						},
-					},
-				},
-			},
-		},
-	},
-	apis: ['./src/index.ts'], // Path to the API docs
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "ImmuDB CRUD API",
+      version: "1.0.0",
+      description:
+        "A tamper-proof CRUD API using ImmuDB for immutable database operations",
+      contact: {
+        name: "API Support",
+        email: "support@example.com",
+      },
+    },
+    servers: [
+      {
+        url: `http://localhost:${process.env.PORT || 3000}`,
+        description: "Development server",
+      },
+    ],
+    components: {
+      schemas: {
+        User: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              description: "Unique identifier for the user",
+            },
+            name: {
+              type: "string",
+              description: "User's full name",
+            },
+            email: {
+              type: "string",
+              format: "email",
+              description: "User's email address",
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              description: "Timestamp when the user was created",
+            },
+          },
+          required: ["id", "name", "email"],
+        },
+        VerifiedResponse: {
+          type: "object",
+          properties: {
+            success: {
+              type: "boolean",
+              description: "Whether the operation was successful",
+            },
+            user: {
+              $ref: "#/components/schemas/User",
+            },
+            users: {
+              type: "array",
+              items: {
+                $ref: "#/components/schemas/User",
+              },
+            },
+            count: {
+              type: "integer",
+              description: "Number of users returned",
+            },
+            tamperProof: {
+              type: "object",
+              properties: {
+                verified: {
+                  type: "boolean",
+                  description:
+                    "Whether the data has been cryptographically verified",
+                },
+                transactionId: {
+                  type: "string",
+                  description: "ImmuDB transaction ID",
+                },
+                cryptographicProof: {
+                  type: "boolean",
+                  description: "Whether cryptographic proof is available",
+                },
+              },
+            },
+          },
+        },
+        Error: {
+          type: "object",
+          properties: {
+            success: {
+              type: "boolean",
+              example: false,
+            },
+            error: {
+              type: "string",
+              description: "Error message",
+            },
+          },
+        },
+        HealthCheck: {
+          type: "object",
+          properties: {
+            success: {
+              type: "boolean",
+              description: "Whether the service is healthy",
+            },
+            database: {
+              type: "string",
+              enum: ["connected", "disconnected"],
+              description: "Database connection status",
+            },
+            timestamp: {
+              type: "string",
+              format: "date-time",
+              description: "Current timestamp",
+            },
+          },
+        },
+      },
+    },
+  },
+  apis: ["./src/index.ts"], // Path to the API docs
 };
 
 const specs = swaggerJsdoc(swaggerOptions);
 
 interface User {
-	id: string;
-	name: string;
-	email: string;
-	createdAt: Date;
+  id: string;
+  name: string;
+  email: string;
+  createdAt: Date;
 }
 
 interface VerifiedResponse {
-	data: any;
-	verified: boolean;
-	txId?: string;
-	proof?: any;
+  data: any;
+  verified: boolean;
+  txId?: string;
+  proof?: any;
 }
 
 class ImmudbCrudService {
-	private client: ImmudbClient;
+  private client: ImmudbClient;
 
-	constructor() {
-		const host = process.env.IMMUDB_ADDR?.split(':')[0] || 'localhost';
-		const port = parseInt(process.env.IMMUDB_ADDR?.split(':')[1] || '3322');
+  constructor() {
+    const host = process.env.IMMUDB_ADDR?.split(":")[0] || "localhost";
+    const port = parseInt(process.env.IMMUDB_ADDR?.split(":")[1] || "3322");
 
-		this.client = new ImmudbClient({
-			host: 'localhost',
-			port: 3322,
-			database: process.env.DB_NAME || 'defaultdb',
-		});
-	}
+    this.client = new ImmudbClient({
+      host,
+      port,
+      database: "mydb", // process.env.DB_NAME ||
+    });
+  }
 
-	async connect(): Promise<void> {
-		const user = process.env.IMMUDB_USER || 'immudb';
-		const password = process.env.IMMUDB_PASSWORD || 'immudb';
+  async connect(): Promise<void> {
+    const user = process.env.IMMUDB_USER || "immudb";
+    const password = process.env.IMMUDB_PASSWORD || "immudb";
 
-		await this.client.login({ user, password });
+    await this.client.login({ user, password });
 
-		// Create users table if it doesn't exist
-		await this.client.SQLExec({
-			sql: `
-		  CREATE TABLE IF NOT EXISTS "users" (
-		    id VARCHAR[100] NOT NULL,
-		    name VARCHAR[100],
-		    email VARCHAR[100],
-		    created_at INTEGER,
-		    PRIMARY KEY (id)
-		  )
+    // Create users table if it doesn't exist
+    await this.client.SQLExec({
+      sql: `
+        CREATE TABLE IF NOT EXISTS "users" (
+          id VARCHAR[100] NOT NULL,
+          name VARCHAR[100],
+          email VARCHAR[100],
+          created_at INTEGER,
+          PRIMARY KEY (id)
+        )
 		`,
-		});
+    });
 
-		// Create indexes separately (ImmuDB requires this)
-		try {
-			await this.client.SQLExec({ sql: `CREATE INDEX IF NOT EXISTS ON "users" (name)` });
-			await this.client.SQLExec({ sql: `CREATE INDEX IF NOT EXISTS ON "users" (email)` });
-		} catch (error) {
-			console.log(error);
-		}
-	}
+    // Create indexes separately (ImmuDB requires this)
+    try {
+      await this.client.SQLExec({
+        sql: `CREATE INDEX IF NOT EXISTS ON "users" (name)`,
+      });
+      await this.client.SQLExec({
+        sql: `CREATE INDEX IF NOT EXISTS ON "users" (email)`,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
-	// CREATE - Verified write operation
-	async createUser(user: Omit<User, 'createdAt'>): Promise<VerifiedResponse> {
-		try {
-			const userId = user.id;
-			const createdAt = Date.now(); // Use timestamp as integer
+  // CREATE - Verified write operation
+  async createUser(user: Omit<User, "createdAt">): Promise<VerifiedResponse> {
+    try {
+      const userId = user.id;
+      const createdAt = Date.now(); // Use timestamp as integer
 
-			// Use SQL execution for tamper-proof writes
-			const result = await this.client.SQLExec({
-				sql: `
+      // Use SQL execution for tamper-proof writes
+      const result = await this.client.SQLExec({
+        sql: `
           INSERT INTO "users" (id, name, email, created_at) 
           VALUES (@id, @name, @email, @createdAt)
         `,
-				params: {
-					id: userId,
-					name: user.name,
-					email: user.email,
-					createdAt: createdAt,
-				},
-			});
+        params: {
+          id: userId,
+          name: user.name,
+          email: user.email,
+          createdAt: createdAt,
+        },
+      });
 
-			return {
-				data: { ...user, createdAt: new Date(createdAt) },
-				verified: true,
-				txId: result.txs?.[0]?.header?.id?.toString(),
-				proof: result,
-			};
-		} catch (error) {
-			throw new Error(`Failed to create user: ${error}`);
-		}
-	}
+      return {
+        data: { ...user, createdAt: new Date(createdAt) },
+        verified: true,
+        txId: result.txs?.[0]?.header?.id?.toString(),
+        proof: result,
+      };
+    } catch (error) {
+      throw new Error(`Failed to create user: ${error}`);
+    }
+  }
 
-	// READ - Verified read operation
-	async getUser(id: string): Promise<VerifiedResponse> {
-		try {
-			// Use SQL query for reading data
-			const result = await this.client.SQLQuery({
-				sql: `
+  // READ - Verified read operation
+  async getUser(id: string): Promise<VerifiedResponse> {
+    try {
+      // Use SQL query for reading data
+      const result = await this.client.SQLQuery({
+        sql: `
           SELECT id, name, email, created_at 
           FROM "users" 
           WHERE id = @id
         `,
-				params: { id },
-			});
+        params: { id },
+      });
 
-			if (!result || result.length === 0) {
-				throw new Error('User not found');
-			}
+      if (!result || result.length === 0) {
+        throw new Error("User not found");
+      }
 
-			const row = result[0];
-			console.log(result);
+      const row = result[0];
+      const userData = row;
 
-			const values = row.values as unknown as any[];
-			const userData = row;
+      return {
+        data: userData,
+        verified: true,
+        proof: result,
+      };
+    } catch (error) {
+      throw new Error(`Failed to get user: ${error}`);
+    }
+  }
 
-			return {
-				data: userData,
-				verified: true,
-				proof: result,
-			};
-		} catch (error) {
-			throw new Error(`Failed to get user: ${error}`);
-		}
-	}
-
-	// READ ALL - Get all users with verification
-	async getAllUsers(): Promise<VerifiedResponse> {
-		try {
-			const result = await this.client.SQLQuery({
-				sql: `
+  // READ ALL - Get all users with verification
+  async getAllUsers(): Promise<VerifiedResponse> {
+    try {
+      const result = await this.client.SQLQuery({
+        sql: `
           SELECT id, name, email, created_at 
           FROM "users" 
           ORDER BY created_at DESC
         `,
-			});
+      });
 
-			const users = result || [];
+      const users = result || [];
 
-			return {
-				data: users,
-				verified: true,
-				proof: result,
-			};
-		} catch (error) {
-			throw new Error(`Failed to get users: ${error}`);
-		}
-	}
+      return {
+        data: users,
+        verified: true,
+        proof: result,
+      };
+    } catch (error) {
+      throw new Error(`Failed to get users: ${error}`);
+    }
+  }
 
-	// UPDATE - Verified update operation
-	async updateUser(id: string, updates: Partial<Omit<User, 'id' | 'createdAt'>>): Promise<VerifiedResponse> {
-		try {
-			// First verify the user exists
-			await this.getUser(id);
+  // UPDATE - Verified update operation
+  async updateUser(
+    id: string,
+    updates: Partial<Omit<User, "id" | "createdAt">>
+  ): Promise<VerifiedResponse> {
+    try {
+      // First verify the user exists
+      await this.getUser(id);
 
-			const result = await this.client.SQLExec({
-				sql: `
+      const result = await this.client.SQLExec({
+        sql: `
           UPDATE "users" 
           SET name = @name, email = @email
           WHERE id = @id
         `,
-				params: {
-					id,
-					name: updates.name || '',
-					email: updates.email || '',
-				},
-			});
-			console.log('result', result);
+        params: {
+          id,
+          name: updates.name || "",
+          email: updates.email || "",
+        },
+      });
 
-			// Get updated user data
-			const updatedUser = await this.getUser(id);
+      // Get updated user data
+      const updatedUser = await this.getUser(id);
 
-			return {
-				data: updatedUser.data,
-				verified: true,
-				txId: result.txs?.[0]?.header?.id?.toString(),
-				proof: result,
-			};
-		} catch (error) {
-			throw new Error(`Failed to update user: ${error}`);
-		}
-	}
+      return {
+        data: updatedUser.data,
+        verified: true,
+        txId: result.txs?.[0]?.header?.id?.toString(),
+        proof: result,
+      };
+    } catch (error) {
+      throw new Error(`Failed to update user: ${error}`);
+    }
+  }
 
-	// Time Travel Query - Verify data at specific transaction
-	async getUserAtTransaction(id: string, txId: string): Promise<VerifiedResponse> {
-		try {
-			// For now, just return current user data as historical queries
-			// require specific immudb methods that may not be available in this client version
-			const currentUser = await this.getUser(id);
+  // Time Travel Query - Verify data at specific transaction
+  async getUserAtTransaction(
+    id: string,
+    txId: string
+  ): Promise<VerifiedResponse> {
+    try {
+      // For now, just return current user data as historical queries
+      // require specific immudb methods that may not be available in this client version
+      const currentUser = await this.getUser(id);
 
-			return {
-				data: currentUser.data,
-				verified: true,
-				proof: { note: `Historical data before transaction ${txId}` },
-			};
-		} catch (error) {
-			throw new Error(`Failed to get historical user data: ${error}`);
-		}
-	}
+      return {
+        data: currentUser.data,
+        verified: true,
+        proof: { note: `Historical data before transaction ${txId}` },
+      };
+    } catch (error) {
+      throw new Error(`Failed to get historical user data: ${error}`);
+    }
+  }
 
-	// Health check method
-	async healthCheck(): Promise<boolean> {
-		try {
-			await this.client.SQLQuery({ sql: 'SELECT 1;' });
-			return true;
-		} catch (error) {
-			return false;
-		}
-	}
+  // DELETE - Verified delete operation
+  async deleteUser(id: string): Promise<VerifiedResponse> {
+    try {
+      // First verify the user exists
+      const user = await this.getUser(id);
+
+      const result = await this.client.SQLExec({
+        sql: `
+					DELETE FROM "users"
+					WHERE id = @id
+				`,
+        params: { id },
+      });
+
+      return {
+        data: user.data,
+        verified: true,
+        txId: result.txs?.[0]?.header?.id?.toString(),
+        proof: result,
+      };
+    } catch (error) {
+      throw new Error(`Failed to delete user: ${error}`);
+    }
+  }
+
+  // Health check method
+  async healthCheck(): Promise<boolean> {
+    try {
+      await this.client.SQLQuery({ sql: "SELECT 1;" });
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
 }
 
 // Express API Routes
@@ -342,11 +375,11 @@ const app = express();
 app.use(express.json());
 
 // Swagger UI route
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 // Root endpoint that redirects to API docs
-app.get('/', (req, res) => {
-	res.redirect('/api-docs');
+app.get("/", (req, res) => {
+  res.redirect("/api-docs");
 });
 
 const crudService = new ImmudbCrudService();
@@ -354,8 +387,10 @@ const crudService = new ImmudbCrudService();
 // Initialize connection
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
-	await crudService.connect();
-	console.log(`Server running on port ${PORT} with immudb connection established`);
+  await crudService.connect();
+  console.log(
+    `Server running on port ${PORT} with immudb connection established`
+  );
 });
 
 /**
@@ -379,30 +414,30 @@ app.listen(PORT, async () => {
  *             schema:
  *               $ref: '#/components/schemas/HealthCheck'
  */
-app.get('/health', async (req, res) => {
-	try {
-		const isHealthy = await crudService.healthCheck();
-		if (isHealthy) {
-			res.json({
-				success: true,
-				database: 'connected',
-				timestamp: new Date().toISOString(),
-			});
-		} else {
-			res.status(500).json({
-				success: false,
-				database: 'disconnected',
-				timestamp: new Date().toISOString(),
-			});
-		}
-	} catch (error) {
-		res.status(500).json({
-			success: false,
-			database: 'disconnected',
-			error: (error as any).message,
-			timestamp: new Date().toISOString(),
-		});
-	}
+app.get("/health", async (req, res) => {
+  try {
+    const isHealthy = await crudService.healthCheck();
+    if (isHealthy) {
+      res.json({
+        success: true,
+        database: "connected",
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        database: "disconnected",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      database: "disconnected",
+      error: (error as any).message,
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 /**
@@ -450,23 +485,23 @@ app.get('/health', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-app.post('/users', async (req, res) => {
-	try {
-		const { id, name, email } = req.body;
-		const result = await crudService.createUser({ id, name, email });
+app.post("/users", async (req, res) => {
+  try {
+    const { id, name, email } = req.body;
+    const result = await crudService.createUser({ id, name, email });
 
-		res.status(201).json({
-			success: true,
-			user: result.data,
-			tamperProof: {
-				verified: result.verified,
-				transactionId: result.txId,
-				cryptographicProof: !!result.proof,
-			},
-		});
-	} catch (error) {
-		res.status(400).json({ success: false, error: (error as any).message });
-	}
+    res.status(201).json({
+      success: true,
+      user: result.data,
+      tamperProof: {
+        verified: result.verified,
+        transactionId: result.txId,
+        cryptographicProof: !!result.proof,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as any).message });
+  }
 });
 
 /**
@@ -498,21 +533,21 @@ app.post('/users', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-app.get('/users/:id', async (req, res) => {
-	try {
-		const result = await crudService.getUser(req.params.id);
+app.get("/users/:id", async (req, res) => {
+  try {
+    const result = await crudService.getUser(req.params.id);
 
-		res.json({
-			success: true,
-			user: result.data,
-			tamperProof: {
-				verified: result.verified,
-				cryptographicProof: !!result.proof,
-			},
-		});
-	} catch (error) {
-		res.status(404).json({ success: false, error: (error as any).message });
-	}
+    res.json({
+      success: true,
+      user: result.data,
+      tamperProof: {
+        verified: result.verified,
+        cryptographicProof: !!result.proof,
+      },
+    });
+  } catch (error) {
+    res.status(404).json({ success: false, error: (error as any).message });
+  }
 });
 
 /**
@@ -556,22 +591,23 @@ app.get('/users/:id', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-app.get('/users', async (req, res) => {
-	try {
-		const result = await crudService.getAllUsers();
+app.get("/users", async (req, res) => {
+  try {
+    const result = await crudService.getAllUsers();
 
-		res.json({
-			success: true,
-			users: result.data,
-			count: result.data.length,
-			tamperProof: {
-				verified: result.verified,
-				cryptographicProof: !!result.proof,
-			},
-		});
-	} catch (error) {
-		res.status(500).json({ success: false, error: (error as any).message });
-	}
+    res.json({
+      success: true,
+      users: result.data,
+      count: result.data.length,
+      tamperProof: {
+        verified: result.verified,
+        cryptographicProof: !!result.proof,
+        trxn: result.txId,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: (error as any).message });
+  }
 });
 
 /**
@@ -625,23 +661,23 @@ app.get('/users', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-app.put('/users/:id', async (req, res) => {
-	try {
-		const { name, email } = req.body;
-		const result = await crudService.updateUser(req.params.id, { name, email });
+app.put("/users/:id", async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    const result = await crudService.updateUser(req.params.id, { name, email });
 
-		res.json({
-			success: true,
-			user: result.data,
-			tamperProof: {
-				verified: result.verified,
-				transactionId: result.txId,
-				cryptographicProof: !!result.proof,
-			},
-		});
-	} catch (error) {
-		res.status(400).json({ success: false, error: (error as any).message });
-	}
+    res.json({
+      success: true,
+      user: result.data,
+      tamperProof: {
+        verified: result.verified,
+        transactionId: result.txId,
+        cryptographicProof: !!result.proof,
+      },
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: (error as any).message });
+  }
 });
 
 /**
@@ -698,22 +734,102 @@ app.put('/users/:id', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-app.get('/users/:id/history/:txId', async (req, res) => {
-	try {
-		const result = await crudService.getUserAtTransaction(req.params.id, req.params.txId);
+app.get("/users/:id/history/:txId", async (req, res) => {
+  try {
+    const result = await crudService.getUserAtTransaction(
+      req.params.id,
+      req.params.txId
+    );
 
-		res.json({
-			success: true,
-			historicalUser: result.data,
-			tamperProof: {
-				verified: result.verified,
-				cryptographicProof: !!result.proof,
-				note: 'This data represents the state before the specified transaction',
-			},
-		});
-	} catch (error) {
-		res.status(404).json({ success: false, error: (error as any).message });
-	}
+    res.json({
+      success: true,
+      historicalUser: result.data,
+      tamperProof: {
+        verified: result.verified,
+        cryptographicProof: !!result.proof,
+        note: "This data represents the state before the specified transaction",
+      },
+    });
+  } catch (error) {
+    res.status(404).json({ success: false, error: (error as any).message });
+  }
+});
+
+/**
+ * @swagger
+ * /users/{id}:
+ *   delete:
+ *     summary: Delete a user
+ *     description: Delete a user by ID with tamper-proof verification
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *         example: "user123"
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 deletedUser:
+ *                   $ref: '#/components/schemas/User'
+ *                 tamperProof:
+ *                   type: object
+ *                   properties:
+ *                     verified:
+ *                       type: boolean
+ *                       description: Whether the deletion has been cryptographically verified
+ *                     transactionId:
+ *                       type: string
+ *                       description: ImmuDB transaction ID of the deletion
+ *                     cryptographicProof:
+ *                       type: boolean
+ *                       description: Whether cryptographic proof of deletion is available
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       400:
+ *         description: Bad request - invalid ID or deletion failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.delete("/users/:id", async (req, res) => {
+  try {
+    const result = await crudService.deleteUser(req.params.id);
+
+    res.json({
+      success: true,
+      deletedUser: result.data,
+      tamperProof: {
+        verified: result.verified,
+        transactionId: result.txId,
+        cryptographicProof: !!result.proof,
+      },
+    });
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error occurred";
+    if (errorMessage.includes("not found")) {
+      res.status(404).json({ success: false, error: errorMessage });
+    } else {
+      res.status(400).json({ success: false, error: errorMessage });
+    }
+  }
 });
 
 export default app;
