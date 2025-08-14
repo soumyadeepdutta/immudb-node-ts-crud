@@ -154,17 +154,20 @@ class ImmudbCrudService {
 		const port = parseInt(process.env.IMMUDB_ADDR?.split(':')[1] || '3322');
 
 		this.client = new ImmudbClient({
-			host: 'localhost',
-			port: 3322,
-			database: process.env.DB_NAME || 'defaultdb',
+			host,
+			port,
 		});
 	}
 
 	async connect(): Promise<void> {
 		const user = process.env.IMMUDB_USER || 'immudb';
 		const password = process.env.IMMUDB_PASSWORD || 'immudb';
+		const databaseName = process.env.IMMUDB_DBNAME || 'defaultdb';
 
+		console.log('Connecting to ImmuDB with:', { user, password, databaseName });
 		await this.client.login({ user, password });
+		console.log('Logged in successfully, switching to database:', databaseName);
+		await this.client.useDatabase({databasename: databaseName});	//NOTE: pass it as object and key should be all smallcaps 
 
 		// Create users table if it doesn't exist
 		await this.client.SQLExec({

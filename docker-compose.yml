@@ -6,6 +6,7 @@ services:
     ports:
       - "3322:3322"
       - "9497:9497"
+      - "8080:8080"
     command: ["--devmode"]
     volumes:
       - immudb_data:/root/.immudb
