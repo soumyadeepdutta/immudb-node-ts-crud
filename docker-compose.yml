@@ -18,28 +18,28 @@ services:
       retries: 5
       start_period: 30s
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: immudb-node-app
-    depends_on:
-      immudb:
-        condition: service_healthy
-    ports:
-      - "3000:3000"
-    environment:
-      - IMMUDB_ADDR=immudb:3322
-      - IMMUDB_USER=immudb
-      - IMMUDB_PASSWORD=immudb
-      - DB_NAME=mydb
-      - PORT=3000
-      - ROOT_PATH=./.immudb_root
-    command: ["npm", "run", "start:prod"]
-    working_dir: /usr/src/app
-    volumes:
-      - ./:/usr/src/app
-    restart: unless-stopped
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: immudb-node-app
+  #   depends_on:
+  #     immudb:
+  #       condition: service_healthy
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - IMMUDB_ADDR=immudb:3322
+  #     - IMMUDB_USER=immudb
+  #     - IMMUDB_PASSWORD=immudb
+  #     - DB_NAME=mydb
+  #     - PORT=3000
+  #     - ROOT_PATH=./.immudb_root
+  #   command: ["npm", "run", "start:prod"]
+  #   working_dir: /usr/src/app
+  #   volumes:
+  #     - ./:/usr/src/app
+  #   restart: unless-stopped
 
 volumes:
   immudb_data:
